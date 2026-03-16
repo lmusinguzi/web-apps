@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Points Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header { margin-bottom: 1.5rem; }
+    .header h1 { font-size: 24px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+    .header p { font-size: 14px; color: #6b6b67; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e2;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b6b67;
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e5e2;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td { padding: 9px 10px; border-bottom: 1px solid #f0f0ee; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+
+    td input[type="number"],
+    td input[type="text"] {
+      padding: 5px 8px;
+      font-size: 14px;
+      border: 1px solid #e5e5e2;
+      border-radius: 7px;
+      background: #fafaf8;
+      color: #1a1a18;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    td input[type="number"] { width: 80px; text-align: center; }
+    td input[type="text"] { width: 120px; }
+    td input:focus {
+      outline: none;
+      border-color: #378add;
+      box-shadow: 0 0 0 3px rgba(55,138,221,0.12);
+      background: #fff;
+    }
+
+    .computed { font-weight: 600; color: #1a1a18; }
+    .total-pts { font-size: 17px; font-weight: 700; }
+
+    .winner-row td { background: #f0faf4; }
+    .loser-row td { background: #fff5f5; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .badge-winner { background: #d1fae5; color: #065f46; }
+    .badge-loser  { background: #fee2e2; color: #991b1b; }
+    .badge-tie    { background: #fef3c7; color: #92400e; }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #b0b0aa;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .remove-btn:hover { color: #dc2626; background: #fee2e2; }
+
+    .add-btn {
+      margin-top: 1rem;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid #d1d1cc;
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a18;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .add-btn:hover { background: #f5f5f3; border-color: #b0b0aa; }
+
+    .summary-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b6b67;
+      margin-bottom: 12px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .metric {
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .metric-label { font-size: 11px; color: #6b6b67; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 700; color: #1a1a18; }
+    .metric-sub { font-size: 11px; color: #9b9b96; margin-top: 3px; }
+
+    .summary-insight {
+      font-size: 13px;
+      color: #6b6b67;
+      line-height: 1.6;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0ee;
+    }
+    .insight-winner { color: #065f46; font-weight: 600; }
+    .insight-strong { font-weight: 600; color: #1a1a18; }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.75rem; }
+      .card { padding: 1rem; }
+      td input[type="text"] { width: 90px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Points Tracker</h1>
+      <p>Edit current points, remaining matches, and points per match to see who wins.</p>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Current points</th>
+              <th>Remaining matches</th>
+              <th>Pts / match (max)</th>
+              <th>Points remaining</th>
+              <th>Total points</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="team-rows"></tbody>
+        </table>
+      </div>
+      <button class="add-btn" onclick="addTeam()">+ Add team</button>
+    </div>
+
+    <div class="card" id="summary-box"></div>
+  </div>
+
+  <script>
+    let teams = [
+      { id: 1, name: 'Arsenal',  current: 70, remaining: 7, ppm: 3 },
+      { id: 2, name: 'Man City', current: 61, remaining: 8, ppm: 3 },
+    ];
+    let nextId = 3;
+
+    function calc(t) {
+      const rem   = t.remaining * t.ppm;
+      const total = t.current + rem;
+      return { rem, total };
+    }
+
+    function render() {
+      const tbody  = document.getElementById('team-rows');
+      const calcs  = teams.map(t => ({ ...t, ...calc(t) }));
+      const maxTotal = Math.max(...calcs.map(c => c.total));
+      const winners  = calcs.filter(c => c.total === maxTotal);
+      const isTie    = winners.length > 1;
+
+      tbody.innerHTML = '';
+      calcs.forEach(c => {
+        const isWinner = c.total === maxTotal;
+        const tr = document.createElement('tr');
+        if (!isTie) tr.classList.add(isWinner ? 'winner-row' : 'loser-row');
+
+        let badge = '';
+        if (isTie)          badge = `<span class="badge badge-tie">⚖ Tie</span>`;
+        else if (isWinner)  badge = `<span class="badge badge-winner">★ Winner</span>`;
+        else                badge = `<span class="badge badge-loser">✕ Loser</span>`;
+
+        tr.innerHTML = `
+          <td><input type="text"   value="${esc(c.name)}"    style="text-align:left;"  onchange="updateField(${c.id},'name',    this.value)"></td>
+          <td><input type="number" value="${c.current}"   min="0"          onchange="updateField(${c.id},'current',  +this.value)"></td>
+          <td><input type="number" value="${c.remaining}" min="0"          onchange="updateField(${c.id},'remaining',+this.value)"></td>
+          <td><input type="number" value="${c.ppm}"       min="0" max="3" step="0.5" onchange="updateField(${c.id},'ppm',      +this.value)"></td>
+          <td class="computed">${c.rem}</td>
+          <td class="computed total-pts">${c.total}</td>
+          <td>${badge}</td>
+          <td>${teams.length > 1 ? `<button class="remove-btn" onclick="removeTeam(${c.id})" title="Remove team">×</button>` : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      renderSummary(calcs, winners, isTie, maxTotal);
+    }
+
+    function renderSummary(calcs, winners, isTie, maxTotal) {
+      const box    = document.getElementById('summary-box');
+      const sorted = [...calcs].sort((a, b) => b.total - a.total);
+      const leader = sorted[0];
+      const second = sorted[1];
+      const gap    = second ? leader.total - second.total : null;
+
+      let html = `<div class="summary-title">Projection summary</div><div class="summary-grid">`;
+      calcs.forEach(c => {
+        html += `<div class="metric">
+          <div class="metric-label">${esc(c.name)}</div>
+          <div class="metric-value">${c.total}</div>
+          <div class="metric-sub">${c.current} now + ${c.rem} projected</div>
+        </div>`;
+      });
+      html += `</div><div class="summary-insight">`;
+
+      if (isTie) {
+        html += `⚖ Projected tie at <span class="insight-strong">${maxTotal} points</span> between ${winners.map(w => esc(w.name)).join(' & ')}.`;
+      } else if (second) {
+        html += `<span class="insight-winner">${esc(leader.name)}</span> leads by <span class="insight-strong">${gap} point${gap !== 1 ? 's' : ''}</span> (${leader.total} vs ${second.total}).`;
+        if (second.remaining > 0) {
+          const needed = ((leader.total - second.current) / second.remaining).toFixed(1);
+          html += ` ${esc(second.name)} needs <span class="insight-strong">${needed} pts/match</span> to overtake.`;
+        }
+      }
+      html += `</div>`;
+      box.innerHTML = html;
+    }
+
+    function updateField(id, field, val) {
+      const t = teams.find(t => t.id === id);
+      if (t) { t[field] = val; render(); }
+    }
+
+    function addTeam() {
+      teams.push({ id: nextId++, name: `Team ${teams.length + 1}`, current: 0, remaining: 10, ppm: 3 });
+      render();
+    }
+
+    function removeTeam(id) {
+      teams = teams.filter(t => t.id !== id);
+      render();
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    render();
+  </script>
+</body>
+</html>
